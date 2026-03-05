@@ -1,3 +1,4 @@
 ConvertedNNs/*
 out_report/
-*/__pycache/*
+PTmodels/__pycache/*
+tensorrtConversion/__pycache/*
