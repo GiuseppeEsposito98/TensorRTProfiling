@@ -7,7 +7,7 @@ import numpy as np
 import random
 
 # For our custom calibrator
-from map_tool_box.scripts.tensorrtConversion.Calibration.calibrator import load_data, load_labels, EntropyCalibrator
+from map_tool_box.scripts.Pytorch_to_TensorRT.tensorrtConversion.Calibration.calibrator import load_data, load_labels, EntropyCalibrator
 import sys, os
 # trt.Logger.Severity.VERBOSE
 TRT_LOGGER = trt.Logger()
@@ -77,11 +77,6 @@ def build_trt_engine(onnx_path: str,
                     #  opt_shape=(4, 3, 640, 640),
                     #  max_shape=(8, 3, 1280, 1280)
                      ) -> None:
-    """
-    Compila un engine TensorRT (.plan) dall'ONNX e lo serializza su disco.
-    - Usa EXPLICIT_BATCH e un Optimization Profile con range dinamici.
-    - Abilita FP16 se supportato e richiesto.
-    """
     logger = trt.Logger(trt.Logger.WARNING)
     explicit_batch = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
 

@@ -11,8 +11,8 @@ import tensorrt as trt
 from map_tool_box.scripts.PTmodels.sb3net import SB3Net
 import numpy as np
 from collections import OrderedDict
-from map_tool_box.scripts.tensorrtConversion.ConverterUtils import build_int8_engine_from_onnx, build_trt_engine
-from map_tool_box.scripts.tensorrtConversion.Calibration.calibrator import EntropyCalibrator
+from map_tool_box.scripts.Pytorch_to_TensorRT.tensorrtConversion.ConverterUtils import build_int8_engine_from_onnx, build_trt_engine
+from map_tool_box.scripts.Pytorch_to_TensorRT.tensorrtConversion.Calibration.calibrator import EntropyCalibrator
 import json
 import sys
 from pathlib import Path
@@ -45,7 +45,6 @@ def export_to_onnx(model: torch.nn.Module,
                    export_mode=None) -> None:
     
     inputs = make_inputs(input_shapes)
-
 
 
     # input_names = ["obs", "vec"]
@@ -101,8 +100,8 @@ def main():
     input_shapes = list()
 
     if mapUT == 'NH':
-        input_shapes.append((3, 3,144,256))
-        input_shapes.append((3,12))
+        input_shapes.append((1, 3,144,256))
+        input_shapes.append((1,12))
     elif mapUT == 'blocks':
         input_shapes.append((1,4,36,64))
         input_shapes.append((1,12))
@@ -115,7 +114,6 @@ def main():
     with open(pickle_path, 'rb') as f:
         model_arch = pickle.load(f)
     model = SB3Net(model_arch.cnn_extractor, model_arch.linear_extractor, model_arch.vec_extractor, model_arch.q_net)
-
     
     print(model)
     
@@ -143,7 +141,8 @@ def main():
             input_shapes = input_shapes,
             dynamic=no_dynamic
         )
-        print(f"[OK] ONNX salvato: {onnx_path}")
+        print(f"[OK] ONNX saved: {onnx_path}")
+        
         build_trt_engine(
             onnx_path=onnx_path,
             plan_path=plan_path,
@@ -156,7 +155,7 @@ def main():
             input_shapes = input_shapes,
             dynamic=no_dynamic
         )
-        print(f"[OK] ONNX salvato: {onnx_path}")
+        print(f"[OK] ONNX saved: {onnx_path}")
         try:
             calibration_cache = os.path.join(root_save_path, 'calibration.cache')
             calib = EntropyCalibrator(training_data=None, cache_file=calibration_cache, inputs_shape=input_shapes)
