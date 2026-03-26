@@ -8,3 +8,4 @@ tensorrtConversion/Calibration/__pycache__/
 tensorrtConversion/*.log
 data/
 __pycache__
+exe.sh
