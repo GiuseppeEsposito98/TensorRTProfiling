@@ -65,7 +65,7 @@ done
 ```
 
 3. You will find the final report in out_report folder. 
-4. The per-layer profiling details are available in the NN.json file which is in the folder corresponding to your test case.
+4. The per-layer profiling details are available in the ConvertedNNs subfolder corresponding to the evaluated model (i.e., the NN.json file). 
 
 ## Usage: Evaluate the HT configurations
 
@@ -105,4 +105,4 @@ done
 ```
 
 3. You will find the final report in out_report folder.
-4. The per-layer profiling details are available in the NN.json file which is in the folder corresponding to your test case.
+4. The per-layer profiling details are available in the ConvertedNNs subfolder corresponding to the evaluated model (i.e., the NN.json file). 
