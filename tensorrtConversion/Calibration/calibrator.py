@@ -17,9 +17,9 @@ def load_data(filepath=None, inputs_shape=None, num_samples=512):
     if filepath:
         raise NotImplementedError
     xs = []
-    # print(f'inputs_shape: {inputs_shape}')
+    
     for shape in inputs_shape:
-        # print(f'shape: {shape}')
+        
         x = np.random.rand(num_samples, *shape).astype(np.float32)
         xs.append(np.ascontiguousarray(x))
     return xs

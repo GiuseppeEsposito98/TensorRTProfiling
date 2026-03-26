@@ -6,15 +6,17 @@ import pycuda.autoinit
 import numpy as np
 import random
 
-# For our custom calibrator
+# We need a custom calibrator because the model expects 2 inputs
 from tensorrtConversion.Calibration.calibrator import load_data, load_labels, EntropyCalibrator
 import sys, os
+
+# include the following row in the brackets to inspect the verbose TensorRT log
 # trt.Logger.Severity.VERBOSE
 TRT_LOGGER = trt.Logger()
 
 
 def build_int8_engine_from_onnx(onnx_path, calibrator, plan_path=None, fp16_fallback=False, explicit_batch=False):
-    # explicit_batch consigliato con modelli moderni (ONNX)
+
     if explicit_batch:
         flags = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
     else:
@@ -33,16 +35,15 @@ def build_int8_engine_from_onnx(onnx_path, calibrator, plan_path=None, fp16_fall
                 print("ONNX parser error:", parser.get_error(i))
             raise RuntimeError("Parsing ONNX failed.")
         config.profiling_verbosity = trt.ProfilingVerbosity.DETAILED
-        # Config
+
+        # Config the maximum workspace that TRT can take during the conversion to avoid memory overflow
         # config.max_workspace_size = max_workspace
         if builder.platform_has_fast_int8:
             config.set_flag(trt.BuilderFlag.INT8)
 
-        # Calibratore INT8
+        # Set the INT8 Calibrator for a multi-input policy, other
         config.int8_calibrator = calibrator
 
-        # Profili per shape dinamiche (se servono)
-        # ESEMPIO: imposta un profilo per input 'obs' e 'vec'
         profile = builder.create_optimization_profile()
 
         if explicit_batch:
@@ -58,24 +59,19 @@ def build_int8_engine_from_onnx(onnx_path, calibrator, plan_path=None, fp16_fall
                     profile.set_shape(name, min_shape, opt_shape, max_shape)
         config.add_optimization_profile(profile)
 
-        # Costruisci il motore
+        # Build the TRT engine
         serialized = builder.build_serialized_network(network, config)
         if serialized is None:
             raise RuntimeError("build_serialized_network returned None (build failed).")
         if plan_path:
             with open(plan_path, "wb") as f:
                 f.write(serialized)
-        print(f"[OK] Engine salvato: {plan_path}")
+        print(f"[OK] Engine saved in: {plan_path}")
 
 
 def build_trt_engine(onnx_path: str,
                      plan_path: str = None,
                      fp16: bool = True
-                    #  workspace_gb: float = 2.0,
-                     # Profili dinamici (N,C,H,W). Deve essere coerente con l'ONNX.
-                    #  min_shape=(1, 3, 224, 224),
-                    #  opt_shape=(4, 3, 640, 640),
-                    #  max_shape=(8, 3, 1280, 1280)
                      ) -> None:
     logger = trt.Logger(trt.Logger.WARNING)
     explicit_batch = 1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
@@ -94,22 +90,21 @@ def build_trt_engine(onnx_path: str,
             if not parser.parse(f.read()):
                 for i in range(parser.num_errors):
                     print(f"[TRT][Parser] {parser.get_error(i)}")
-                raise RuntimeError("Parsing ONNX fallito. Vedi errori sopra.")
+                raise RuntimeError("Parsing ONNX failed.")
 
         # Optimization Profile per input dinamico
         profile = builder.create_optimization_profile()
         input_tensor = network.get_input(0)
-        assert input_tensor.name, "Input senza nome?"
-        # profile.set_shape(input_tensor.name, min=min_shape, opt=opt_shape, max=max_shape)
+        
         config.add_optimization_profile(profile)
         config.profiling_verbosity = trt.ProfilingVerbosity.DETAILED
 
-        # Costruisci e serializza
+        # Build and serialize the engine
         engine_bytes = builder.build_serialized_network(network, config)
         if engine_bytes is None:
-            raise RuntimeError("Build engine fallita.")
+            raise RuntimeError("Build engine failed.")
 
         if plan_path:
             with open(plan_path, "wb") as f:
                 f.write(engine_bytes)
-        print(f"[OK] Engine salvato: {plan_path}")
+        print(f"[OK] Engine saved in: {plan_path}")

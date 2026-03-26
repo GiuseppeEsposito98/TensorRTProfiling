@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import os
 import argparse
 import torch
@@ -32,11 +29,7 @@ def iter_shape_leaves(s):
 def make_inputs(input_shapes, low=0, high=100):
     leaves = list(iter_shape_leaves(input_shapes))
     return tuple(torch.randn(*sh, dtype=torch.float32, device='cuda') for sh in leaves)
-    # print(len(inputs))
-# Esempio
-# input_shapes = [[(3, 3, 144, 256), (3, 12)]]
-# inputs = make_inputs(input_shapes, dtype='float32')
-
+    
 
 def export_to_onnx(model: torch.nn.Module,
                    onnx_path: str,
@@ -46,12 +39,8 @@ def export_to_onnx(model: torch.nn.Module,
     
     inputs = make_inputs(input_shapes)
 
-
-    # input_names = ["obs", "vec"]
     output_names = ["output"]
     print(model)
-
-    # dummy_input = tuple([dummy_obs, dummy_vec])
 
     dynamic_axes = None
     print(f'input shape: {inputs[0].shape}')
@@ -83,6 +72,7 @@ def pick_layer_by_idx(model, lyr_idx):
 
 def main():
 
+    # Input arguments
     ap = argparse.ArgumentParser(description="Benchmarking NN performance")
     ap.add_argument("--format", default = "FP16", help="Target data type")
     ap.add_argument("--map", default = "blocks", help="Target map")
@@ -111,6 +101,7 @@ def main():
     onnx_path = 'NN.onnx'
     pickle_path = f'./PTmodels/{mapUT}/sb3net.p'
 
+    # Pytorch model initialization
     with open(pickle_path, 'rb') as f:
         model_arch = pickle.load(f)
     model = SB3Net(model_arch.cnn_extractor, model_arch.linear_extractor, model_arch.vec_extractor, model_arch.q_net)
@@ -133,7 +124,7 @@ def main():
     plan_path = os.path.join(root_save_path, plan_path)
         
     
-
+    ## From Pytorch to ONNX
     if 'fp16' in args.format.lower():
         export_to_onnx(
             model=model,
@@ -148,6 +139,7 @@ def main():
             plan_path=plan_path,
         )
 
+    ## INT8 conversion
     elif 'int8' in args.format.lower():
         export_to_onnx(
             model=model,

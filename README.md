@@ -1,9 +1,9 @@
 # TensorRT-Profiling
 This repository provides the code to:
-- Convert the Pytorch-based Neural Networks for autonomous drone navigation in TensorRT compatible format
-- Profile at the kernel-level the operations graph by inspecting each NN layer.
-- Profile the inference time through the Hardware Program Counters.
-- Profile the energy consumption through internal Hardware Telemetry Sensors.
+- Convert the Pytorch-based Neural Networks for autonomous drone navigation in TensorRT compatible format;
+- Profile at the kernel-level the operations graph by inspecting each NN layer;
+- Profile the inference time through the Hardware Program Counters;
+- Profile the energy consumption through internal Hardware Telemetry Sensors;
 On a NVIDIA Jetson-based device, such as Jetson NANO.
 
 ## Requirements

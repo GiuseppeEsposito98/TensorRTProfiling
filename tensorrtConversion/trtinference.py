@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 import tensorrt as trt
 import pycuda.driver as cuda
-import pycuda.autoinit  # inizializza il contesto CUDA
+import pycuda.autoinit
 from tensorrtConversion.common import get_binding_info, allocate_bindings, load_numpy_or_random, np_dtype_from_trt, load_engine
 
 
@@ -36,14 +36,14 @@ def run_pipeline():
     
     root_plan_path = os.path.join(root_plan_path, engine_file_name)
 
-    # 1) Carica engine e crea contesto
+    # 1) Load the engine
     engine = load_engine(root_plan_path)
     context = engine.create_execution_context()
 
     if not context:
         raise RuntimeError("Impossibile creare IExecutionContext.")
     
-    # 2) Info binding (utile per log/diagnostica)
+    # 2) Info binding
     bindings = get_binding_info(engine)
 
     print("== Bindings ==")
@@ -51,11 +51,11 @@ def run_pipeline():
         print(f"[{'IN ' if b['is_input'] else 'OUT'}] {b['index']:2d}  {b['name']:<20} "
               f"dtype={b['dtype']}  shape={b['shape']}")
 
-    # 4) Alloca buffer H2D/D2H per tutti i binding
+    # 4) Allocate buffer H2D/D2H for all the necessary bindings
     stream = cuda.Stream()
     bindings_ptrs, host_inout, device_inout = allocate_bindings(engine, context, stream)
 
-    # 5) Inizializza gli input (da .npy o random)
+    # 5) Initialize inputs (from .npy or random)
     dtype = np.float32
     if int8:
         dtype = np.int8
@@ -69,19 +69,19 @@ def run_pipeline():
                 meta["buffer"][:] = load_numpy_or_random(vec_npy, meta["shape"], dtype).ravel()
                 print(f'ARRAY DTYPE: {meta["buffer"][:].dtype}')
 
-    # 6) Esecuzione (una o più inferenze)
+    # 6) Perform one or more inferences
     for it in range(run):
-        # H2D per tutti gli input
+        # H2D for all the inputs
         for name, meta in host_inout.items():
             if meta["is_input"]:
                 cuda.memcpy_htod_async(device_inout[name], meta["buffer"], stream)
 
         # Inference
-        ok = context.execute_v2(bindings_ptrs)  # esecuzione sincrona sullo stream di default
+        ok = context.execute_v2(bindings_ptrs)  # Synchronous inference run
         if not ok:
             raise RuntimeError("execute_v2 ha restituito False.")
 
-        # D2H per tutti gli output
+        # D2H for all the outputs
         for name, meta in host_inout.items():
             if not meta["is_input"]:
                 cuda.memcpy_dtoh_async(meta["buffer"], device_inout[name], stream)

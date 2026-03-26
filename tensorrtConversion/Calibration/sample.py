@@ -1,4 +1,3 @@
-# In questo esempio facciamo solo la calibrazione e l'inferenza del modello in formato int8
 import tensorrt as trt
 import pycuda.driver as cuda
 import pycuda.autoinit
@@ -14,9 +13,6 @@ from map_tool_box.scripts.tensorrtConversion.common import get_binding_info, all
 from map_tool_box.scripts.tensorrtConversion.ConverterUtils import build_int8_engine_from_onnx
 
 
-# This function builds an engine from a Caffe model.
-
-
 def inference(context, bindings_ptrs, host_inout, device_inout, stream, batch_size, obs_npy=None, vec_npy=None):
     for name, meta in host_inout.items():
         if meta["is_input"]:
@@ -25,20 +21,20 @@ def inference(context, bindings_ptrs, host_inout, device_inout, stream, batch_si
             elif name == "vec":
                 meta["buffer"][:] = load_numpy_or_random(vec_npy, meta["shape"], meta["dtype"]).ravel()
             else:
-                # per eventuali input addizionali
+            
                 meta["buffer"][:] = load_numpy_or_random(None, meta["shape"], meta["dtype"]).ravel()
 
-    # H2D per tutti gli input
+    # H2D for all the inputs
     for name, meta in host_inout.items():
         if meta["is_input"]:
             cuda.memcpy_htod_async(device_inout[name], meta["buffer"], stream)
 
     # Inference
-    ok = context.execute_v2(bindings_ptrs)  # esecuzione sincrona sullo stream di default
+    ok = context.execute_v2(bindings_ptrs) 
     if not ok:
         raise RuntimeError("execute_v2 ha restituito False.")
 
-    # D2H per tutti gli output
+    # D2H for all the outputs
     for name, meta in host_inout.items():
         if not meta["is_input"]:
             cuda.memcpy_dtoh_async(meta["buffer"], device_inout[name], stream)
